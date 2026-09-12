@@ -69,10 +69,6 @@
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
         Dentists
       </a>
-      <a href="?page=admin_staff" class="nav-item <?= ($currentPage??'') === 'admin_staff' ? 'active' : '' ?>">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-        Staff
-      </a>
       <a href="?page=admin_payments" class="nav-item <?= ($currentPage??'') === 'admin_payments' ? 'active' : '' ?>">
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
   Payments
@@ -87,6 +83,17 @@
       <a href="?page=admin_reports" class="nav-item <?= ($currentPage??'') === 'admin_reports' ? 'active' : '' ?>">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
         Reports
+      </a>
+      <a href="?page=admin_feedback" class="nav-item <?= ($currentPage??'') === 'admin_feedback' ? 'active' : '' ?>">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.196-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
+        Feedback
+        <?php
+          $db = getDB();
+          $fbRes   = $db->query("SELECT COUNT(*) as cnt FROM feedback WHERE is_read = 0");
+          $fbCount = $fbRes->fetch_assoc()['cnt'] ?? 0;
+          if ($fbCount > 0): ?>
+          <span style="margin-left:auto;background:#e74c3c;color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;"><?= $fbCount ?></span>
+        <?php endif; ?>
       </a>
 
       <div class="nav-label" style="margin-top:12px;">Account</div>
@@ -109,10 +116,10 @@
     <?php elseif (isStaff()): ?>
       <!--
         STAFF MENU — mirrors the admin menu above, but leaves out
-        "Dentists", "Staff", "Reports", and "Reset Requests" since
-        those stay owner-only. All links point at the exact same
-        pages as admin (the controller methods behind them already
-        accept staff via requireStaffOrAdmin()).
+        "Dentists" and "Reports" since those stay owner-only.
+        All links point at the exact same pages as admin (the
+        controller methods behind them already accept staff via
+        requireStaffOrAdmin()).
       -->
       <div class="nav-label">Main Menu</div>
       <a href="?page=admin_dashboard" class="nav-item <?= ($currentPage??'') === 'admin_dashboard' ? 'active' : '' ?>">
@@ -134,6 +141,10 @@
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
         Calendar
       </a>
+      <a href="?page=admin_patients" class="nav-item <?= ($currentPage??'') === 'admin_patients' ? 'active' : '' ?>">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        Patients
+      </a>
 
       <!-- ── PENDING APPROVALS ── -->
       <a href="?page=pending_patients" class="nav-item <?= ($currentPage??'') === 'pending_patients' ? 'active' : '' ?>">
@@ -146,6 +157,21 @@
           if ($pendingCount > 0): ?>
           <span style="margin-left:auto;background:#e74c3c;color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;"><?= $pendingCount ?></span>
         <?php endif; ?>
+      </a>
+
+      <!-- ── RESET REQUESTS ── -->
+      <a href="?page=admin_reset_requests" class="nav-item <?= ($currentPage??'') === 'admin_reset_requests' ? 'active' : '' ?>">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+        Reset Requests
+        <?php
+          try {
+            $db = getDB();
+            $resetRes   = $db->query("SELECT COUNT(*) as cnt FROM password_resets WHERE status='pending'");
+            $resetCount = $resetRes ? ($resetRes->fetch_assoc()['cnt'] ?? 0) : 0;
+            if ($resetCount > 0): ?>
+            <span style="margin-left:auto;background:#e74c3c;color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;"><?= $resetCount ?></span>
+          <?php endif;
+          } catch (Exception $e) { /* table may not exist yet */ } ?>
       </a>
 
       <a href="?page=admin_payments" class="nav-item <?= ($currentPage??'') === 'admin_payments' ? 'active' : '' ?>">
@@ -237,6 +263,10 @@
       <a href="#" class="nav-item" onclick="openSchedulePanel(); return false;">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
         My Schedule
+      </a>
+      <a href="?page=patient_feedback" class="nav-item <?= ($currentPage??'') === 'patient_feedback' ? 'active' : '' ?>">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.196-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
+        Feedback
       </a>
       <div class="nav-label" style="margin-top:12px;">Account</div>
       <a href="?page=settings" class="nav-item <?= ($currentPage??'') === 'settings' ? 'active' : '' ?>">
