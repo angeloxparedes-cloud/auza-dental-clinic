@@ -1,4 +1,10 @@
 <?php
+if (function_exists('opcache_reset')) {
+    opcache_reset();
+    echo "OPcache cleared successfully.";
+} else {
+    echo "OPcache is not enabled on this server.";
+}
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
