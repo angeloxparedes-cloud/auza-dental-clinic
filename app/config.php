@@ -8,7 +8,13 @@ define('DB_PASS', '@Paredes90');
 define('DB_NAME', 'u255343148_dental_clinic');
 
 define('APP_NAME', 'Auza Dental Clinic');
-define('APP_URL', 'http://localhost/dental-clinic');
+
+// Auto-detect the URL so this works on both XAMPP (localhost) and
+// Hostinger (auzadentalclinic.online) without editing this every deploy.
+$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
+$host     = $_SERVER['HTTP_HOST'] ?? 'localhost';
+$basePath = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '')), '/');
+define('APP_URL', $protocol . $host . $basePath);
 
 // Session start
 if (session_status() === PHP_SESSION_NONE) {
