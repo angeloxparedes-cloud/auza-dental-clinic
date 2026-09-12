@@ -456,12 +456,44 @@ class AdminController {
     if (!$id) redirect('admin_patients', 'Invalid patient.', 'error');
 
     $db = getDB();
-    $stmt = $db->prepare("DELETE FROM users WHERE id = ? AND role = 'patient'");
-    $stmt->bind_param('i', $id);
-    $stmt->execute();
-    $stmt->close();
 
-    redirect('admin_patients', 'Patient deleted successfully.', 'success');
+    // Delete dependent rows first, in the correct order, so this works
+    // regardless of whether the database's own foreign key constraints
+    // are set to cascade. feedback references appointments, so it must
+    // go before appointments are removed.
+    $db->begin_transaction();
+    try {
+        $stmt = $db->prepare("DELETE f FROM feedback f JOIN appointments a ON f.appointment_id = a.id WHERE a.patient_id = ? OR f.patient_id = ?");
+        $stmt->bind_param('ii', $id, $id);
+        $stmt->execute();
+        $stmt->close();
+
+        $stmt = $db->prepare("DELETE FROM payments WHERE patient_id = ?");
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        $stmt->close();
+
+        $stmt = $db->prepare("DELETE FROM appointments WHERE patient_id = ?");
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        $stmt->close();
+
+        $stmt = $db->prepare("DELETE FROM password_resets WHERE user_id = ?");
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        $stmt->close();
+
+        $stmt = $db->prepare("DELETE FROM users WHERE id = ? AND role = 'patient'");
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        $stmt->close();
+
+        $db->commit();
+        redirect('admin_patients', 'Patient deleted successfully.', 'success');
+    } catch (\Throwable $e) {
+        $db->rollback();
+        redirect('admin_patients', 'Could not delete patient. Please try again or contact support.', 'error');
+    }
 }
 public function calendar() {
         requireStaffOrAdmin();
