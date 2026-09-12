@@ -3,9 +3,9 @@
 // DATABASE CONFIGURATION
 // ============================================
 define('DB_HOST', 'localhost');
-define('DB_USER', 'root');
-define('DB_PASS', '');
-define('DB_NAME', 'dental_clinic');
+define('DB_USER', 'u255343148_dental_admin');
+define('DB_PASS', '@Paredes90');
+define('DB_NAME', 'u255343148_dental_clinic');
 
 define('APP_NAME', 'Auza Dental Clinic');
 define('APP_URL', 'http://localhost/dental-clinic');
