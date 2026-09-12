@@ -447,19 +447,17 @@ class AdminController {
             redirect('admin_staff', 'That email is already registered.', 'error');
         }
 
-        // Real password column gets an unusable random hash — the staff
-        // member can only log in via the temp password below, exactly
-        // like the password-reset flow.
-        $placeholder = password_hash(bin2hex(random_bytes(16)), PASSWORD_BCRYPT);
-
+        // Matches how approveReset() creates temp passwords: the temp
+        // password's hash goes straight into the real password column,
+        // since login() only checks that column (not temp_password).
         $temp   = 'Temp@' . rand(1000, 9999);
         $hashed = password_hash($temp, PASSWORD_BCRYPT);
 
         $stmt = $db->prepare("
-            INSERT INTO users (first_name, last_name, email, password, phone, role, is_verified, status, temp_password)
-            VALUES (?, ?, ?, ?, ?, 'staff', 1, 'approved', ?)
+            INSERT INTO users (first_name, last_name, email, password, phone, role, is_verified, status)
+            VALUES (?, ?, ?, ?, ?, 'staff', 1, 'approved')
         ");
-        $stmt->bind_param('ssssss', $first, $last, $email, $placeholder, $phone, $hashed);
+        $stmt->bind_param('sssss', $first, $last, $email, $hashed, $phone);
         $stmt->execute();
         $stmt->close();
 
