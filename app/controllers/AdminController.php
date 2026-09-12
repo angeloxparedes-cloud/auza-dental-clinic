@@ -397,6 +397,120 @@ class AdminController {
         redirect('admin_dentists', 'Dentist deactivated.', 'info');
     }
 
+    /**
+     * Lists all staff accounts for the admin "Staff" management page.
+     */
+    public function staff() {
+        requireAdmin();
+        $db = getDB();
+        $result = $db->query("
+            SELECT id, first_name, last_name, email, phone, status, created_at
+            FROM users
+            WHERE role = 'staff'
+            ORDER BY created_at DESC
+        ");
+        $staff = $result->fetch_all(MYSQLI_ASSOC);
+        require __DIR__ . '/../views/admin/staff.php';
+    }
+
+    /**
+     * Handles the "Add New Staff" modal form. Creates the account with
+     * a generated temporary password (same pattern as approveReset()) —
+     * the staff member logs in with it once and is forced to set a
+     * real password, via the existing temp_password flow in
+     * AuthController::login().
+     */
+    public function addStaff() {
+        requireAdmin();
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect('admin_staff');
+        }
+
+        $first = sanitize($_POST['first_name'] ?? '');
+        $last  = sanitize($_POST['last_name'] ?? '');
+        $email = sanitize($_POST['email'] ?? '');
+        $phone = sanitize($_POST['phone'] ?? '');
+
+        if (!$first || !$last || !$email) {
+            redirect('admin_staff', 'Please fill in all required fields.', 'error');
+        }
+
+        $db = getDB();
+
+        $chk = $db->prepare("SELECT id FROM users WHERE LOWER(TRIM(email)) = LOWER(TRIM(?)) LIMIT 1");
+        $chk->bind_param('s', $email);
+        $chk->execute();
+        $exists = $chk->get_result()->fetch_assoc();
+        $chk->close();
+
+        if ($exists) {
+            redirect('admin_staff', 'That email is already registered.', 'error');
+        }
+
+        // Real password column gets an unusable random hash — the staff
+        // member can only log in via the temp password below, exactly
+        // like the password-reset flow.
+        $placeholder = password_hash(bin2hex(random_bytes(16)), PASSWORD_BCRYPT);
+
+        $temp   = 'Temp@' . rand(1000, 9999);
+        $hashed = password_hash($temp, PASSWORD_BCRYPT);
+
+        $stmt = $db->prepare("
+            INSERT INTO users (first_name, last_name, email, password, phone, role, is_verified, status, temp_password)
+            VALUES (?, ?, ?, ?, ?, 'staff', 1, 'approved', ?)
+        ");
+        $stmt->bind_param('ssssss', $first, $last, $email, $placeholder, $phone, $hashed);
+        $stmt->execute();
+        $stmt->close();
+
+        redirect('admin_staff', "Staff account created! Temporary password: {$temp}", 'success');
+    }
+
+    /**
+     * Activate/deactivate a staff account (mirrors the Deactivate/Reactivate
+     * buttons in staff.php). Deactivated staff are blocked at login by the
+     * existing status !== 'approved' check in AuthController::login().
+     */
+    public function updateStaffStatus() {
+        requireAdmin();
+
+        $id     = (int)($_GET['id'] ?? 0);
+        $action = $_GET['action'] ?? '';
+
+        if (!in_array($action, ['approved', 'rejected']) || $id <= 0) {
+            redirect('admin_staff', 'Invalid action.', 'error');
+        }
+
+        $db = getDB();
+        $stmt = $db->prepare("UPDATE users SET status = ? WHERE id = ? AND role = 'staff'");
+        $stmt->bind_param('si', $action, $id);
+        $stmt->execute();
+        $stmt->close();
+
+        $msg = $action === 'approved' ? 'Staff account reactivated.' : 'Staff account deactivated.';
+        redirect('admin_staff', $msg, 'success');
+    }
+
+    /**
+     * Permanently deletes a staff account.
+     */
+    public function deleteStaff() {
+        requireAdmin();
+
+        $id = (int)($_GET['id'] ?? 0);
+        if ($id <= 0) {
+            redirect('admin_staff', 'Invalid staff id.', 'error');
+        }
+
+        $db = getDB();
+        $stmt = $db->prepare("DELETE FROM users WHERE id = ? AND role = 'staff'");
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        $stmt->close();
+
+        redirect('admin_staff', 'Staff account deleted.', 'success');
+    }
+
     public function payments() {
         requireStaffOrAdmin();
         $filter = sanitize($_GET['status'] ?? '');
