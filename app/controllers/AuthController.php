@@ -17,7 +17,8 @@ class AuthController {
             } else {
                 $db = getDB();
                 $stmt = $db->prepare("
-                    SELECT id, first_name, last_name, email, password, phone, role, is_verified, status
+                    SELECT id, first_name, last_name, email, password, phone, role, is_verified, status,
+                           failed_login_attempts, locked_until
                     FROM users
                     WHERE LOWER(TRIM(email)) = LOWER(TRIM(?))
                     LIMIT 1
@@ -32,6 +33,20 @@ class AuthController {
                 } else {
                     $user = $rows[0];
 
+                    // ── LOCKOUT CHECK ─────────────────────────────────────────
+                    // If this account is currently locked out from too many
+                    // failed attempts, block the attempt before even checking
+                    // the password, and tell them how long is left.
+                    $lockedUntil = $user['locked_until'] ?? null;
+                    if ($lockedUntil && strtotime($lockedUntil) > time()) {
+                        $secondsLeft = strtotime($lockedUntil) - time();
+                        $minutesLeft = (int)ceil($secondsLeft / 60);
+                        $error = "Too many failed login attempts. Please try again in {$minutesLeft} minute" . ($minutesLeft === 1 ? '' : 's') . ".";
+                        require __DIR__ . '/../views/auth/login.php';
+                        return;
+                    }
+                    // ───────────────────────────────────────────────────────────
+
                     // ── CHECK TEMP PASSWORD FIRST ────────────────────────────
                     // If admin set a temp password, check if patient is using it
                     $tempPass = $user['temp_password'] ?? null;
@@ -45,6 +60,14 @@ class AuthController {
                     // ─────────────────────────────────────────────────────────
 
                     if ($usingTempPassword || password_verify($password, $user['password'])) {
+
+                        // Successful login — clear any failed-attempt counter.
+                        if ((int)$user['failed_login_attempts'] > 0 || $user['locked_until']) {
+                            $clear = $db->prepare("UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE id = ?");
+                            $clear->bind_param('i', $user['id']);
+                            $clear->execute();
+                            $clear->close();
+                        }
 
                         // ── ACCOUNT VERIFICATION CHECK ───────────────────────
                         if ($user['role'] === 'patient') {
@@ -88,7 +111,29 @@ class AuthController {
                         // ─────────────────────────────────────────────────────
 
                     } else {
-                        $error = 'Invalid email or password.';
+                        // ── WRONG PASSWORD: COUNT THE ATTEMPT ────────────────
+                        $maxAttempts   = 5;
+                        $lockoutMins   = 5;
+                        $attempts      = (int)$user['failed_login_attempts'] + 1;
+
+                        if ($attempts >= $maxAttempts) {
+                            $lockUntil = date('Y-m-d H:i:s', time() + ($lockoutMins * 60));
+                            $upd = $db->prepare("UPDATE users SET failed_login_attempts = ?, locked_until = ? WHERE id = ?");
+                            $upd->bind_param('isi', $attempts, $lockUntil, $user['id']);
+                            $upd->execute();
+                            $upd->close();
+
+                            $error = "Too many failed login attempts. Please try again in {$lockoutMins} minutes.";
+                        } else {
+                            $upd = $db->prepare("UPDATE users SET failed_login_attempts = ? WHERE id = ?");
+                            $upd->bind_param('ii', $attempts, $user['id']);
+                            $upd->execute();
+                            $upd->close();
+
+                            $triesLeft = $maxAttempts - $attempts;
+                            $error = "Invalid email or password. {$triesLeft} attempt" . ($triesLeft === 1 ? '' : 's') . " remaining before a temporary lockout.";
+                        }
+                        // ───────────────────────────────────────────────────────
                     }
                 }
             }
