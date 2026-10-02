@@ -109,9 +109,12 @@ class AuthController {
             $phone      = sanitize($_POST['phone'] ?? '');
             $password   = $_POST['password'] ?? '';
             $confirm    = $_POST['confirm_password'] ?? '';
+            $agreed     = isset($_POST['agree_privacy']) && $_POST['agree_privacy'] === '1';
 
             if (empty($first_name) || empty($last_name) || empty($email) || empty($password)) {
                 $error = 'Please fill in all required fields.';
+            } elseif (!$agreed) {
+                $error = 'You must read and agree to the Privacy Policy before creating an account.';
             } elseif ($password !== $confirm) {
                 $error = 'Passwords do not match.';
             } elseif (strlen($password) < 8) {
