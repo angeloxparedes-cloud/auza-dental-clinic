@@ -269,6 +269,69 @@
     z-index: 2;
   }
   .eye-toggle:hover { color: #1D9E75; }
+
+  /* ── PRIVACY CONSENT ── */
+  .privacy-consent-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin: 4px 0 4px;
+    font-size: 0.85rem;
+    color: #5a7080;
+    line-height: 1.4;
+  }
+  .privacy-consent-row input[type="checkbox"] {
+    margin-top: 3px;
+    width: 16px;
+    height: 16px;
+    accent-color: #1D9E75;
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  .privacy-consent-row label { cursor: pointer; }
+  .privacy-link {
+    color: #1D9E75;
+    font-weight: 600;
+    text-decoration: underline;
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: inherit;
+  }
+
+  .privacy-modal .modal {
+    max-width: 640px;
+    width: 92%;
+    max-height: 82vh;
+    display: flex;
+    flex-direction: column;
+  }
+  .privacy-modal .modal-body {
+    overflow-y: auto;
+    font-size: 0.9rem;
+    color: #3a4a52;
+    line-height: 1.65;
+  }
+  .privacy-modal .modal-body h4 {
+    margin: 18px 0 6px;
+    color: #0F6E56;
+    font-size: 0.95rem;
+  }
+  .privacy-modal .modal-body h4:first-child { margin-top: 0; }
+  .privacy-modal .modal-body ul { margin: 6px 0 6px 18px; padding: 0; }
+  .privacy-modal .modal-body li { margin-bottom: 4px; }
+  .privacy-modal-footer-check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: #3a4a52;
+    margin-right: auto;
+  }
+  .privacy-modal-footer-check input {
+    width: 16px; height: 16px; accent-color: #1D9E75; cursor: pointer;
+  }
 </style>
 </head>
 <body>
@@ -461,6 +524,15 @@
           </div>
         </div>
 
+        <div class="privacy-consent-row">
+          <input type="checkbox" id="agree_privacy_visible">
+          <input type="hidden" name="agree_privacy" id="agree_privacy_hidden" value="0">
+          <label for="agree_privacy_visible">
+            I have read and agree to the
+            <button type="button" class="privacy-link" onclick="openPrivacyModal()">Privacy Policy</button>.
+          </label>
+        </div>
+
         <button type="submit" class="btn btn-primary btn-block mt-2">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
           Create Account
@@ -476,7 +548,101 @@
 
 </div>
 
+<!-- PRIVACY POLICY MODAL -->
+<div class="modal-overlay privacy-modal" id="privacyModalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Privacy Policy</div>
+      <button type="button" class="modal-close" onclick="closePrivacyModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p><strong>Auza Dental Clinic</strong> ("we", "us", "the Clinic") respects your privacy. This policy explains what information we collect through this appointment system, why we collect it, and how it is used and protected.</p>
+
+      <h4>1. Information We Collect</h4>
+      <ul>
+        <li><strong>Account details:</strong> full name, email address, phone number, and a securely hashed password.</li>
+        <li><strong>Appointment details:</strong> the service requested, preferred date and time, and, where applicable, the specific tooth selected for treatment.</li>
+        <li><strong>Payment records:</strong> service cost and payment status related to your appointments.</li>
+        <li><strong>Feedback:</strong> star ratings and comments you choose to submit after a completed appointment.</li>
+      </ul>
+
+      <h4>2. How We Use Your Information</h4>
+      <ul>
+        <li>To create and manage your patient account.</li>
+        <li>To schedule, confirm, reschedule, or cancel appointments.</li>
+        <li>To send you email notifications (e.g., appointment confirmations) via the Clinic's email service.</li>
+        <li>To maintain accurate dental and payment records for clinic operations.</li>
+        <li>To review feedback and improve the quality of our service.</li>
+      </ul>
+
+      <h4>3. How We Protect Your Information</h4>
+      <ul>
+        <li>Passwords are never stored in plain text — they are hashed using industry-standard encryption.</li>
+        <li>Access to patient records is restricted to authorized clinic staff and administrators.</li>
+        <li>Your information is stored on a secured database and is not sold or shared with third parties for marketing purposes.</li>
+      </ul>
+
+      <h4>4. Your Rights</h4>
+      <ul>
+        <li>You may request to view, correct, or request deletion of your personal information by contacting the Clinic directly.</li>
+        <li>You may stop using the system at any time; however, some records may be retained as required for clinic and medical record-keeping purposes.</li>
+      </ul>
+
+      <h4>5. Consent</h4>
+      <p>By creating an account, you acknowledge that you have read and understood this Privacy Policy and consent to the collection and use of your information as described above.</p>
+    </div>
+    <div class="modal-footer">
+      <div class="privacy-modal-footer-check">
+        <input type="checkbox" id="agree_privacy_modal">
+        <label for="agree_privacy_modal">I have read and agree to this Privacy Policy</label>
+      </div>
+      <button type="button" class="btn btn-ghost" onclick="closePrivacyModal()">Cancel</button>
+      <button type="button" class="btn btn-primary" id="privacyAgreeBtn" onclick="agreeAndClose()" disabled>Agree & Continue</button>
+    </div>
+  </div>
+</div>
+
 <script>
+const regForm          = document.querySelector('form[action="?page=register"]');
+const visibleCheckbox  = document.getElementById('agree_privacy_visible');
+const hiddenCheckbox   = document.getElementById('agree_privacy_hidden');
+const overlay          = document.getElementById('privacyModalOverlay');
+const modalCheckbox    = document.getElementById('agree_privacy_modal');
+const agreeBtn         = document.getElementById('privacyAgreeBtn');
+
+function openPrivacyModal() {
+  overlay.classList.add('open');
+  modalCheckbox.checked = visibleCheckbox.checked;
+  agreeBtn.disabled = !modalCheckbox.checked;
+}
+function closePrivacyModal() {
+  overlay.classList.remove('open');
+}
+function agreeAndClose() {
+  visibleCheckbox.checked = true;
+  hiddenCheckbox.value = '1';
+  closePrivacyModal();
+}
+
+modalCheckbox.addEventListener('change', function () {
+  agreeBtn.disabled = !this.checked;
+});
+
+visibleCheckbox.addEventListener('change', function () {
+  hiddenCheckbox.value = this.checked ? '1' : '0';
+});
+
+overlay.addEventListener('click', function (e) {
+  if (e.target === overlay) closePrivacyModal();
+});
+
+regForm.addEventListener('submit', function (e) {
+  if (!visibleCheckbox.checked) {
+    e.preventDefault();
+    openPrivacyModal();
+  }
+});
+
 function togglePassword(inputId, btn) {
   const input     = document.getElementById(inputId);
   const eyeOpen   = document.getElementById(inputId + '_eye_open');
