@@ -862,13 +862,52 @@ public function calendar() {
     }
 
     $db = getDB();
-    $stmt = $db->prepare("UPDATE users SET status = ? WHERE id = ?");
-    $stmt->bind_param('si', $action, $id);
-    $stmt->execute();
-    $stmt->close();
 
-    $msg = $action === 'approved' ? 'Patient approved successfully.' : 'Patient rejected.';
-    redirect('pending_patients', $msg, 'success');
+    if ($action === 'approved') {
+        $stmt = $db->prepare("UPDATE users SET status = 'approved' WHERE id = ?");
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        $stmt->close();
+
+        redirect('pending_patients', 'Patient approved successfully.', 'success');
+    }
+
+    // Rejecting a pending registration removes the account entirely rather
+    // than just flagging it, so it no longer shows up anywhere (e.g. the
+    // Patients list). Same safe cascading delete order as deletePatient().
+    $db->begin_transaction();
+    try {
+        $stmt = $db->prepare("DELETE f FROM feedback f JOIN appointments a ON f.appointment_id = a.id WHERE a.patient_id = ? OR f.patient_id = ?");
+        $stmt->bind_param('ii', $id, $id);
+        $stmt->execute();
+        $stmt->close();
+
+        $stmt = $db->prepare("DELETE FROM payments WHERE patient_id = ?");
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        $stmt->close();
+
+        $stmt = $db->prepare("DELETE FROM appointments WHERE patient_id = ?");
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        $stmt->close();
+
+        $stmt = $db->prepare("DELETE FROM password_resets WHERE user_id = ?");
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        $stmt->close();
+
+        $stmt = $db->prepare("DELETE FROM users WHERE id = ? AND role = 'patient'");
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        $stmt->close();
+
+        $db->commit();
+        redirect('pending_patients', 'Patient registration rejected and removed.', 'success');
+    } catch (\Throwable $e) {
+        $db->rollback();
+        redirect('pending_patients', 'Could not reject patient. Please try again or contact support.', 'error');
+    }
 }
 
 public function pendingPatients() {
